@@ -24,16 +24,16 @@ https://picflow.com/convert/jpg-to-bmp
 //Definition Datentypen
 //Dateikopf wie definiert in
 //https://de.wikipedia.org/wiki/Windows_Bitmap
-typedef struct sBMPFileHeader {
+typedef struct sBFHeader {
 	char bfType[2];				//2 Bytes
 	uint32_t bfSize;			//4 Bytes
 	uint32_t bfReserved;		//4 Bytes
 	uint32_t bfOffBits;			//4 Bytes
-} sBMPFileHeader;
+} sBFHeader;
 
 //Informationsblock wie definiert in
 //https://de.wikipedia.org/wiki/Windows_Bitmap
-typedef struct sBMPFileInfoHeader {
+typedef struct sBFInfoHeader {
 	uint32_t biSize;			//4 Bytes
 	int32_t biWidth;			//4 Bytes
 	int32_t biHeight;			//4 Bytes
@@ -41,11 +41,11 @@ typedef struct sBMPFileInfoHeader {
 	uint16_t biBitCount;		//2 Bytes
 	uint32_t biCompression;		//4 Bytes
 	uint32_t biSizeImage;		//4 Bytes
-	int32_t biXPelsPerMeter;	//4 Bytes, wird hier nicht verwendet, nur zur Vollständigkeit
-	int32_t biYPelsPerMeter;	//4 Bytes, wird hier nicht verwendet, nur zur Vollständigkeit
-	uint32_t biClrUsed;			//4 Bytes, wird hier nicht verwendet, nur zur Vollständigkeit
-	uint32_t biClrImportant;	//4 Bytes, wird hier nicht verwendet, nur zur Vollständigkeit
-} sBMPFileInfoHeader;
+	int32_t biXPelsPerMeter;	//4 Bytes, wird hier nicht verwendet, nur zur Vollst ndigkeit
+	int32_t biYPelsPerMeter;	//4 Bytes, wird hier nicht verwendet, nur zur Vollst ndigkeit
+	uint32_t biClrUsed;			//4 Bytes, wird hier nicht verwendet, nur zur Vollst ndigkeit
+	uint32_t biClrImportant;	//4 Bytes, wird hier nicht verwendet, nur zur Vollst ndigkeit
+} sBFInfoHeader;
 
 //RGB-Farbschema
 typedef struct sRGB {
@@ -64,15 +64,15 @@ typedef struct sImage {
 
 
 // Funktionsprototypen
-void bmpProcessing(int filter, int effect, char dateiName[]);
+int bmpProcessing(int filter, int effect, char dateiName[]);
 int getPositiveInt();
 
-//Funktionen für Farbfilter (drei Beispiele)
+//Funktionen f r Farbfilter (drei Beispiele)
 void filterGray(struct sImage image);
 void filterSepia(struct sImage image);
 void filterNegative(struct sImage image);
 
-//Funktionen für Effekte (zwei Beispiele)
+//Funktionen f r Effekte (zwei Beispiele)
 void effectBlurred(struct sImage image);
 void effectScreen(struct sImage image);
 
@@ -81,30 +81,16 @@ int main(int argc, char* argv[]) {
 
 	char fileName[MAXSTRING] = { 0 };
 
-	//TODO
-	// Prüfung der Kommandozeilenparameter
 	if (argc != 2) {
-		printf("Error: Bitte geben Sie den Namen einer BMP-Datei als Argument an.\n");
-		exit(1);
+		printf("F gen Sie ein Dateiname als Argument hinzu");
+		return -1;
 	}
 
-	//Übernahme des Dateinamen in Variable dateiName (fileName)
-	if (strlen(argv[1]) >= MAXSTRING) {
-		printf("Error: Dateiname ist zu lang. Maximale Länge: %d Zeichen.\n", MAXSTRING - 1);
-		exit(1);
-	}
-
-	// Prüfen, ob der Dateiname auf ".bmp" endet
-	if (strlen(argv[1]) < 5 || strcmp(argv[1] + strlen(argv[1]) - 4, ".bmp") != 0) {
-		printf("Error: Der Dateiname muss auf '.bmp' enden.\n");
-		exit(1);
-	}
-	// Dateiname kopieren
+	//TODO
+	//Pr fung der Kommandozeilenparameter
+	// bernahme des Dateinamen in Variable dateiName
 	strncpy(fileName, argv[1], MAXSTRING - 1);
 	fileName[MAXSTRING - 1] = '\0';
-
-	// Weitere Logik
-	printf("Dateiname übernommen: %s\n", fileName);
 
 
 	printf("Herzlich willkommen zur Bearbeitung von BMP-Datein\n");
@@ -136,7 +122,7 @@ int main(int argc, char* argv[]) {
 
 
 /*
-Ziel: Die Funktion wendet einen vom Benutzer ausgewählten Filter und einen vom Benutzer ausgewählten
+Ziel: Die Funktion wendet einen vom Benutzer ausgew hlten Filter und einen vom Benutzer ausgew hlten
 Effekt auf ein Bild im BMP-Format an.
 Das Ergebnis wird in der Datei "Ergebnis.bmp" gespeichert.
 
@@ -144,31 +130,29 @@ Falls ein Fehler auftritt, zum Beispiel die BMP-Datei nicht existiert oder im fa
 wird das Programm sofort beendet.
 
 Parameter:
-- filter: Vom Benutzer ausgewählter Filter
-- effect: Vom Benutzer ausgewählter Effekt
-- fileName: Dateiname des Bilds, das verändert werden soll.
+- filter: Vom Benutzer ausgew hlter Filter
+- effect: Vom Benutzer ausgew hlter Effekt
+- fileName: Dateiname des Bilds, das ver ndert werden soll.
 */
-void bmpProcessing(int filter, int effect, char fileName[]) {
+int bmpProcessing(int filter, int effect, char fileName[]) {
 
 	//TODO
-	//Datei im Binärmodul zum Lesen öffnen
-	FILE* fp = NULL;
-	fp = fopen(fileName, "rb");
-	if (fp == NULL) {
-		printf("Error: Datei konnte nicht geoeffnet werden.");
-		exit(1);
+	//Datei im Bin rmodul zum Lesen  ffnen
+	FILE* fp = fopen(fileName, "rb");
+	if (!fp) {
+		printf("Fehler beim  ffnen der Datei\n");
+		exit(-1);
 	}
 
 
-
 	//Definieren der Variablen
-	sBMPFileHeader header;
-	sBMPFileInfoHeader infoHeader;
+	sBFHeader header;
+	sBFInfoHeader infoHeader;
 	sImage image;
 
 	//Einlesen Dateikopf (Variable header)
 	//Da nur 2 Character im BMP-Dateiformat als bgType erlaubt sind, 
-	//C aber eigentlich ein Stringendezeichen (\0) bei Zeichenketten benötigt,
+	//C aber eigentlich ein Stringendezeichen (\0) bei Zeichenketten ben tigt,
 	//wird das Einlesen der Datei auf zwei fread-Statements aufgeteilt
 	//1. Schritt - Die ersten beiden Buchstaben einlesen
 	fread(header.bfType, 1, 2, fp);
@@ -177,80 +161,73 @@ void bmpProcessing(int filter, int effect, char fileName[]) {
 
 	//TODO
 	//Einlesen Informationsblock (Variable infoHeader) mit sizeof(sBFInfoHeader) Byte
-	if (fread(&infoHeader, sizeof(sBMPFileInfoHeader), 1, fp) != 1) {
-		printf("Error: Informationsblock konnte nicht gelesen werden.\n");
-		fclose(fp);
-		exit(1);
-	}
-
+	fread(&infoHeader, sizeof(sBFInfoHeader), 1, fp);
 
 	//TODO
 	//Fehlerabfragen
-	// 1. Ist Datei im BMP-Format (ersten beiden Buchstaben im Feld bfType von Variable header müssen Werte 'B' und 'M' besitzen)? 
-	if (header.bfType[0] != 'B' || header.bfType[1] != 'M') {
-		printf("Error: Datei ist kein gueltiges BMP-Format.\n");
-		fclose(fp);
-		exit(1);
-	}
-	// 2. Hat der Informationsblock (Feld biSize von Variable infoHeader) die richtige Größe (sizeof(sBFInfoHeader))?
-	if (infoHeader.biSize != sizeof(sBMPFileInfoHeader)) {
-		printf("Error: Groesse des Informationsblocks ist ungueltig.\n");
-		fclose(fp);
-		exit(1);
-	}
+	// 1. Ist Datei im BMP-Format (ersten beiden Buchstaben im Feld bfType von Variable header m ssen Werte 'B' und 'M' besitzen)? 
+	// 2. Hat der Informationsblock (Feld biSize von Variable infoHeader) die richtige Gr  e (sizeof(sBFInfoHeader))?
 	// 3. Ist Datei im 24-Bit Format (Feld biBitCount von Variable infoHeader gleich 24)? 
-	if (infoHeader.biBitCount != 24) {
-		printf("Error: Die Datei ist nicht im 24-Bit-Format. Gefunden: %u\n", infoHeader.biBitCount);
-		fclose(fp);
-		exit(1);
-	}
 	// 4. Ist Datei nicht komprimiert (Feld biCompression von Variable infoHeader gleich 0)?
-	if (infoHeader.biCompression != 0) {
-		printf("Error: Die Datei ist komprimiert.\n");
+	//Falls ein Fehler vorliegt / auftritt, wird das Programm sofort mit einer entsprechenden Fehlermeldung beendet.
+	if (header.bfType[0] != 'B' || header.bfType[1] != 'M')
+	{
+		printf("Die Datei ist kein BMP-Format");
+		fclose(fp);
+		return -1;
+	}
+
+	printf("%d\n", (int)sizeof(sBFInfoHeader));
+	printf("%d\n", infoHeader.biSize);
+
+
+	if (infoHeader.biSize != 40 && infoHeader.biSize != 108 && infoHeader.biSize != 124) {
+		printf("Error: Groesse des Informationsblocks ist ungueltig. \n");
 		fclose(fp);
 		exit(1);
 	}
-	//Falls ein Fehler vorliegt / auftritt, wird das Programm sofort mit einer entsprechenden Fehlermeldung beendet.
+
+	if (infoHeader.biBitCount != 24 || infoHeader.biCompression != 0) {
+		printf("Bitte nur Dateien im 24-Bit Format ohne Kompression");
+		fclose(fp);
+		return -1;
+	}
 
 
 	//TODO
-	//Dateizeiger fp auf Offset (bfOffBits von der Variablen header) setzen
-	if (fseek(fp, header.bfOffBits, SEEK_SET) != 0) {
-		printf("Error: Dateizeiger konnte nicht auf Offset gesetzt werden.\n");
-		fclose(fp);
-		exit(1);
-	}
+	//Dateizeiger fp auf Offset (bfOffBits von der Variablen header) setzen 
+	fseek(fp, header.bfOffBits, SEEK_SET);
 
 
 
-	//Höhe und Breite aus dem Informationsblock in Bilddaten übernehmen
+	//H he und Breite aus dem Informationsblock in Bilddaten  bernehmen
 	image.height = infoHeader.biHeight;
 	image.width = infoHeader.biWidth;
 
 	//Neues Bild anlegen
 	//Hierzu Speicher im Heap anlegen und Bild einlesen
-
 	//Berechnung der Anzahl an Pixel pro Bildzeile
 	//Siehe https://en.wikipedia.org/wiki/BMP_file_format
 	//Anzahl an Bytes pro Bildzeile, Abrundung beim Teilen mit 32 gewollt
-	int rowSize = ((sizeof(sRGB) * 8 * image.width + 31) / 32) * 4;
+	int rowSize = (sizeof(sRGB) * 8 * image.width + 31) / 8;
 
-	//Zeigervektor für zur Speicherung der einzelnen Bildzeilen anlegen 
-	// (entspricht sozusagen der Höhe (height) des Bildes) 
+	//Zeigervektor f r zur Speicherung der einzelnen Bildzeilen anlegen 
+	// (entspricht sozusagen der H he (height) des Bildes) 
 	image.rgb = (struct sRGB**)malloc(image.height * sizeof(void*));
 	//TODO
 	//Fehlerabfrage, ob das Anlegen des Speichers geklappt hat
-	if (image.rgb == NULL) {
-		printf("Error: Speicher konnte nicht angelegt werden.\n");
+	if (!image.rgb) {
+		printf("Fehler bei Speicherzuweisung");
 		fclose(fp);
-		exit(1);
+		return -1;
 	}
+
 
 	//In BMP-Dateien werden die Pixel von unten nach oben gespeichert
 	//Siehe https://en.wikipedia.org/wiki/BMP_file_format -> "Usually pixels are stored "bottom-up"
 	//Also muss die Schleife in der untersten Zeile beginnen
 	for (int i = (image.height - 1); i >= 0; i--) {
-		//Speicher für jede Bildzeile anlegen und auslesen
+		//Speicher f r jede Bildzeile anlegen und auslesen
 		image.rgb[i] = (sRGB*)malloc(rowSize);
 		if (image.rgb[i] != 0)
 			fread(image.rgb[i], rowSize, 1, fp);
@@ -263,7 +240,7 @@ void bmpProcessing(int filter, int effect, char fileName[]) {
 
 	//TODO
 	//Datei schliessen
-	fclose(fileName);
+	fclose(fp);
 
 	//Filter auf Bild anwenden
 	switch (filter) {
@@ -300,60 +277,49 @@ void bmpProcessing(int filter, int effect, char fileName[]) {
 	}
 
 	//TODO
-	//Zeiger fpw zur Ergebnisdatei "Ergebnis.bmp" im Binärmodus zum Schreiben erstellen und Datei öffnen
-	FILE* fpw = NULL;
-	fpw = fopen("Ergebnis.bmp", "wb");
-	if (fpw == NULL) {
-		printf("Error: Ergebnisdatei konnte nicht erstellt oder geoeffnet werden.\n");
-		exit(1);
+	//Zeiger fpw zur Ergebnisdatei "Ergebnis.bmp" im Bin rmodus zum Schreiben erstellen und Datei  ffnen
+	FILE* fpw = fopen("Ergebnis.bmp", "wb");
+	if (!fpw) {
+		printf("Fehler beim Speichern der Datei");
+		return -1;
 	}
-
-
 
 	//Dateikopf und Informationsblock schreiben
 	fwrite(header.bfType, 2 * sizeof(char), 1, fpw);
 	fwrite(&header.bfSize, 3 * sizeof(int), 1, fpw);
-	fwrite(&infoHeader, sizeof(struct sBMPFileInfoHeader), 1, fpw);
+	fwrite(&infoHeader, sizeof(struct sBFInfoHeader), 1, fpw);
 
-	//Offset für die Pixeldaten setzen
+	//Offset f r die Pixeldaten setzen
 	fseek(fpw, header.bfOffBits, SEEK_SET);
 
 	//TODO
 	//Pixeldaten reihenweise in die Ergebnisdatei schreiben.
 	//Die Pixel werden wieder von unten nach oben gespeichert
-	// Pixeldaten reihenweise in die Ergebnisdatei schreiben
 	for (int i = image.height - 1; i >= 0; i--) {
-		if (fwrite(image.rgb[i], rowSize, 1, fpw) != 1) {
-			printf("Error: Fehler beim Schreiben der Pixeldaten in Zeile %d.\n", i);
-			fclose(fpw);
-			exit(1);
-		}
+		fwrite(image.rgb[i], rowSize, 1, fpw);
+		free(image.rgb[i]);
 	}
 
-
 	//TODO
-	//Datei schließen
+	//Datei schlie en
 	fclose(fpw);
 
 	//TODO
-	//Speicher freigeben
-	for (int i = 0; i < image.height - 1; i++)
-		free(image.rgb[i]);
-	free(image.rgb);
+	//Speicher freigeben 
 
-	return;
+
+	return 0;
 }
 
 
 //TODO
 /*
-* Ziel: Die Funktion legt einen Graufilter über ein Bild.
-* Hierzu betrachtet die Funktion jedes einzelne Pixel und führt für dieses die folgenden Aktionen durch:
-* - Es werden der Rotanteil mit 0,299, der Blauanteil mit 0,114 und der Grünanteil mit 0,587 des Pixels multipliziert.
-* - Anschließend wird die Summe der drei Produkte gebildet.
-* - Diese Summe wird durch 3 geteilt, um den Durchschnittswert für das Pixel zu erhalten.
-* - Für das Pixel werden dann der Rotanteil, der Grünanteil und der Blauanteil auf diesen Durchschnittswert gesetzt.
-* https://de.wikipedia.org/wiki/Grauwert
+* Ziel: Die Funktion legt einen Graufilter  ber ein Bild.
+* Hierzu betrachtet die Funktion jedes einzelne Pixel und f hrt f r dieses die folgenden Aktionen durch:
+* - Es werden der Rotanteil, der Blauanteil und der Gr nanteil des Pixels mit jeweils 0,3 multipliziert.
+* - Anschlie end wird die Summe der drei Produkte gebildet.
+* - Diese Summe wird durch 3 geteilt, um den Durchschnittswert f r das Pixel zu erhalten.
+* - F r das Pixel werden dann der Rotanteil, der Gr nanteil und der Blauanteil auf diesen Durchschnittswert gesetzt.
 *
 * Parameter:
 * - image: Das Bild, auf den der Graufilter gelegt werden soll.
@@ -361,54 +327,51 @@ void bmpProcessing(int filter, int effect, char fileName[]) {
 void filterGray(sImage image) {
 	for (int i = 0; i < image.height; i++) {
 		for (int j = 0; j < image.width; j++) {
-			// Zugriff auf das aktuelle Pixel
-			sRGB* pixel = &image.rgb[i][j];
-
-			// Berechnung des Grauwerts
-			unsigned char gray = (unsigned char)(
-				(pixel->red * 0.299) +
-				(pixel->green * 0.587) +
-				(pixel->blue * 0.114)
-				);
-
-			// Setzen des Grauwerts für alle Farbanteile
-			pixel->red = gray;
-			pixel->green = gray;
-			pixel->blue = gray;
+			unsigned char gray = (image.rgb[i][j].red + image.rgb[i][j].green + image.rgb[i][j].blue) / 3;
+			image.rgb[i][j].red = gray;
+			image.rgb[i][j].green = gray;
+			image.rgb[i][j].blue = gray;
 		}
 	}
 }
 
 
-
 //TODO
 /*
-* Ziel: Die Funktion legt einen Sepiafilter über ein Bild.
-* Hierzu betrachtet die Funktion jedes einzelne Pixel und führt für dieses die folgenden Aktionen durch:
-* - Für den neuen Rotanteil des Pixel werden der Rotanteil mit 0,320, der Grünanteil mit 0,440 und der Blauanteil mit 0,240 multipliezrt und die Produkte addiert.
-* - Für den neuen Grünanteil des Pixel werden der Rotanteil mit 0,360, der Grünanteil mit 0,360 und der Blauanteil mit 0,160 multipliezrt und die Produkte addiert.
-* - Für den neuen Blauanteil des Pixel werden der Rotanteil mit 0,280, der Grünanteil mit 0,284 und der Blauanteil mit 0,140 multipliezrt und die Produkte addiert.
-* - Für das Pixel werden dann der Rotanteil, der Grünanteil und der Blauanteil entsprechend auf die berechneten neuen Farbanteile gesetzt.
+* Ziel: Die Funktion legt einen Sepiafilter  ber ein Bild.
+* Hierzu betrachtet die Funktion jedes einzelne Pixel und f hrt f r dieses die folgenden Aktionen durch:
+* - F r den neuen Rotanteil des Pixel werden der Rotanteil mit 0,320, der Gr nanteil mit 0,440 und der Blauanteil mit 0,240 multipliezrt und die Produkte addiert.
+* - F r den neuen Gr nanteil des Pixel werden der Rotanteil mit 0,360, der Gr nanteil mit 0,360 und der Blauanteil mit 0,160 multipliezrt und die Produkte addiert.
+* - F r den neuen Blauanteil des Pixel werden der Rotanteil mit 0,280, der Gr nanteil mit 0,284 und der Blauanteil mit 0,140 multipliezrt und die Produkte addiert.
+* - F r das Pixel werden dann der Rotanteil, der Gr nanteil und der Blauanteil entsprechend auf die berechneten neuen Farbanteile gesetzt.
 *
 * Parameter:
 * - image: Das Bild, auf den der Sepiafilter gelegt werden soll.
 */
 void filterSepia(sImage image) {
-
+	for (int i = 0; i < image.height; i++) {
+		for (int j = 0; j < image.width; j++) { {}
+		unsigned char red = (unsigned char)((image.rgb[i][j].red * 0.320) + (image.rgb[i][j].green * 0.440) + (image.rgb[i][j].blue * 0.240));
+		unsigned char green = (unsigned char)((image.rgb[i][j].red * 0.360) + (image.rgb[i][j].green * 0.360) + (image.rgb[i][j].blue * 0.160));
+		unsigned char blue = (unsigned char)((image.rgb[i][j].red * 0.280) + (image.rgb[i][j].green * 0.284) + (image.rgb[i][j].blue * 0.140));
+		image.rgb[i][j].red = (red > 255) ? 255 : red;
+		image.rgb[i][j].green = (green > 255) ? 255 : green;
+		image.rgb[i][j].blue = (blue > 255) ? 255 : blue;
+		}
+	}
 }
-
 
 //TODO
 /*
-* Ziel: Die Funktion legt einen Komplimentärfilter (CMY - cyan magentha yellow) über ein Bild.
-* Hierzu betrachtet die Funktion jedes einzelne Pixel und führt für dieses die folgenden Aktionen durch:
-* - Für den Cyanwert (C) wird der Durchschnitt des Grünanteils und des Blauanteils gebildet.
-* - Für den Magenthawert (M) wird der Durchschnitt des Rotanteils und des Blauanteils gebildet.
-* - Für den Gelbewert (Y) wird der Durchschnitt des Grünanteils und des Rotanteils gebildet.
-* - Für das Pixel werden dann der Cyanwert als Rotanteil, der Magenthawert als Grünanteil und der Gelbwert als Blauanteil gesetzt.
+* Ziel: Die Funktion legt einen Kompliment rfilter (CMY - cyan magentha yellow)  ber ein Bild.
+* Hierzu betrachtet die Funktion jedes einzelne Pixel und f hrt f r dieses die folgenden Aktionen durch:
+* - F r den Cyanwert (C) wird der Durchschnitt des Gr nanteils und des Blauanteils gebildet.
+* - F r den Magenthawert (M) wird der Durchschnitt des Rotanteils und des Blauanteils gebildet.
+* - F r den Gelbewert (Y) wird der Durchschnitt des Gr nanteils und des Rotanteils gebildet.
+* - F r das Pixel werden dann der Cyanwert als Rotanteil, der Magenthawert als Gr nanteil und der Gelbwert als Blauanteil gesetzt.
 *
 * Parameter:
-* - image: Das Bild, auf den der Komplementärfilter gelegt werden soll.
+* - image: Das Bild, auf den der Komplement rfilter gelegt werden soll.
 */
 void filterNegative(sImage image) {
 
@@ -418,18 +381,23 @@ void filterNegative(sImage image) {
 //TODO
 /*
 * Ziel: Die Funktion wendet ein Effekt auf ein Bild an, so dass das Bild verschwommen erscheint.
-* Die Idee ist hierbei, dass der Grünanteil und der Blauanteil auf der x-Achse um 7 Pixel verschoben werden.
-* Hierzu betrachtet die Funktion jedes einzelne Pixel und führt für dieses die folgenden Aktionen durch:
-* - Für den Grünanteil wird die Weite (width, x-Achse) des Pixels um 7 verschoben.
-* - Für den Blauanteil wird die Weite (width, x-Achse) des Pixels um 7 verschoben.
-* - Für das Pixel werden dann der Grünanteil und der Blauanteil entsprechend aktualisiert.
+* Die Idee ist hierbei, dass der Gr nanteil und der Blauanteil auf der x-Achse um 7 Pixel verschoben werden.
+* Hierzu betrachtet die Funktion jedes einzelne Pixel und f hrt f r dieses die folgenden Aktionen durch:
+* - F r den Gr nanteil wird die Weite (width, x-Achse) des Pixels um 7 verschoben.
+* - F r den Blauanteil wird die Weite (width, x-Achse) des Pixels um 7 verschoben.
+* - F r das Pixel werden dann der Gr nanteil und der Blauanteil entsprechend aktualisiert.
 *
 * Parameter:
 * - image: Das Bild, auf den der Effekt Verschwommen angewendet werden soll.
 */
 void effectBlurred(sImage image) {
-
-	return;
+	int shift = 7;
+	for (int i = 0; i < image.height; i++) {
+		for (int j = 0; j < image.width - shift; j++) {
+			image.rgb[i][j].green = image.rgb[i][j + shift].green;
+			image.rgb[i][j].blue = image.rgb[i][j + shift].blue;
+		}
+	}
 }
 
 
@@ -441,7 +409,7 @@ void effectBlurred(sImage image) {
 * deren Position entweder 70 Pixel unterhalb des oberen Bildrandes (height, y-Achse)
 * oder 70 Pixel oberhalb des unteren Bildrandes (height, y-Achse) liegen.
 * Hierzu betrachtet die Funktion jedes einzelne Pixel und
-* führt je nach Lage des Pixels im Bild ggf. die beschriebene Farbänderung auf Schwarz durch.
+* f hrt je nach Lage des Pixels im Bild ggf. die beschriebene Farb nderung auf Schwarz durch.
 *
 * Parameter:
 * - image: Das Bild, auf den der Leinwandeffekt angewendet werden soll.
@@ -457,7 +425,7 @@ void effectScreen(struct sImage image) {
 * @param Parameter
 * None.
 *
-* @return Gibt den eingelesenen Parameter zurück.
+* @return Gibt den eingelesenen Parameter zur ck.
 */
 int getPositiveInt() {
 	int val = 0;
