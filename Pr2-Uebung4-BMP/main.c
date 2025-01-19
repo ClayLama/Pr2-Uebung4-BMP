@@ -1,3 +1,6 @@
+//PPR2 – Übung 4 – Prof. Dr. Ulrike Herster
+//"bmbDateien.c", 19.01.2025, Autoren: Kendelbacher, Schreiner
+
 /*
 Mehr Informationen finden Sie zum Beispiel unter
 https://de.wikipedia.org/wiki/Windows_Bitmap
@@ -82,13 +85,26 @@ int main(int argc, char* argv[]) {
 	char fileName[MAXSTRING] = { 0 };
 
 	if (argc != 2) {
-		printf("F gen Sie ein Dateiname als Argument hinzu");
-		return -1;
+		printf("Error: Bitte geben Sie den Namen einer BMP-Datei als Argument an.\n");
+		exit(1);
 	}
 
 	//TODO
-	//Pr fung der Kommandozeilenparameter
-	// bernahme des Dateinamen in Variable dateiName
+	//Prüfung der Kommandozeilenparameter
+	if (argc != 2) {
+		printf("Error: Bitte geben Sie den Namen einer BMP-Datei als Argument an.\n");
+		exit(1);
+	}
+	if (strlen(argv[1]) >= MAXSTRING) {
+		printf("Error: Dateiname ist zu lang. Maximale Länge: %d Zeichen.\n", MAXSTRING - 1);
+		exit(1);
+	}
+	// Prüfen, ob der Dateiname auf ".bmp" endet
+	if (strlen(argv[1]) < 5 || strcmp(argv[1] + strlen(argv[1]) - 4, ".bmp") != 0) {
+		printf("Error: Der Dateiname muss auf '.bmp' enden.\n");
+		exit(1);
+	}
+	//Übernahme des Dateinamen in Variable dateiName (fileName)
 	strncpy(fileName, argv[1], MAXSTRING - 1);
 	fileName[MAXSTRING - 1] = '\0';
 
@@ -97,8 +113,8 @@ int main(int argc, char* argv[]) {
 	printf("Gueltiges Format: 24-Bit Bitmap (nicht komprimiert)\n");
 	printf("Rufen Sie das Programm mit dem Bildnamen als Argument auf.\n\n\n");
 	printf("Folgende Filter und Effekte stehen zur Verfuegung:\n");
-	printf("Filter:\n 1: Kein Filter\n 2: Graustufen\n 3: Sepia\n 4: Komplementaer\n");
-	printf("Effekte:\n 1: Kein Effekt\n 2: Verschwommen\n 3: Leinwand\n");
+	printf("Filter:\n 1: Kein Filter\n 2: Graustufen\n 3: Sepia\n (4: Komplementaer)\n");
+	printf("Effekte:\n 1: Kein Effekt\n 2: Verschwommen\n (3: Leinwand)\n");
 	printf("\nUm einen Filter/Effekt auszuwaehlen, tippen Sie die davorstehende Nummer ein.\n\n");
 
 	//Filterauswahl
@@ -137,7 +153,7 @@ Parameter:
 int bmpProcessing(int filter, int effect, char fileName[]) {
 
 	//TODO
-	//Datei im Bin rmodul zum Lesen  ffnen
+	//Datei im Binärmodul zum Lesen öffnen
 	FILE* fp = fopen(fileName, "rb");
 	if (!fp) {
 		printf("Fehler beim  oeffnen der Datei\n");
@@ -161,22 +177,23 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 
 	//TODO
 	//Einlesen Informationsblock (Variable infoHeader) mit sizeof(sBFInfoHeader) Byte
-	fread(&infoHeader, sizeof(sBFInfoHeader), 1, fp);
-
-	//TODO
-	//Fehlerabfragen
-	// 1. Ist Datei im BMP-Format (ersten beiden Buchstaben im Feld bfType von Variable header m ssen Werte 'B' und 'M' besitzen)? 
-	// 2. Hat der Informationsblock (Feld biSize von Variable infoHeader) die richtige Gr  e (sizeof(sBFInfoHeader))?
-	// 3. Ist Datei im 24-Bit Format (Feld biBitCount von Variable infoHeader gleich 24)? 
-	// 4. Ist Datei nicht komprimiert (Feld biCompression von Variable infoHeader gleich 0)?
-	//Falls ein Fehler vorliegt / auftritt, wird das Programm sofort mit einer entsprechenden Fehlermeldung beendet.
-	if (header.bfType[0] != 'B' || header.bfType[1] != 'M')
-	{
-		printf("Die Datei ist kein BMP-Format");
+	if (fread(&infoHeader, sizeof(sBFInfoHeader), 1, fp) != 1) {
+		printf("Error: Informationsblock konnte nicht gelesen werden.\n");
 		fclose(fp);
 		exit(1);
 	}
 
+	
+	//TODO
+	//Fehlerabfragen
+	// 1. Ist Datei im BMP-Format (ersten beiden Buchstaben im Feld bfType von Variable header müssen Werte 'B' und 'M' besitzen)? 
+	if (header.bfType[0] != 'B' || header.bfType[1] != 'M') {
+		printf("Error: Datei ist kein gueltiges BMP-Format.\n");
+		fclose(fp);
+		exit(1);
+	}
+
+	// 2. Hat der Informationsblock (Feld biSize von Variable infoHeader) die richtige Größe (sizeof(sBFInfoHeader))?
 	if (infoHeader.biSize != 40 && infoHeader.biSize != 108 && infoHeader.biSize != 124) {
 		printf("Error: Groesse des Informationsblocks ist ungueltig. \n");
 		printf("%d\n", (int)sizeof(sBFInfoHeader));
@@ -185,20 +202,31 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 		exit(1);
 	}
 
-	if (infoHeader.biBitCount != 24 || infoHeader.biCompression != 0) {
-		printf("Bitte nur Dateien im 24-Bit Format ohne Kompression");
+	// 3. Ist Datei im 24-Bit Format (Feld biBitCount von Variable infoHeader gleich 24)? 
+	if (infoHeader.biBitCount != 24) {
+		printf("Error: Die Datei ist nicht im 24-Bit-Format. Gefunden: %u\n", infoHeader.biBitCount);
 		fclose(fp);
 		exit(1);
 	}
 
-
+	// 4. Ist Datei nicht komprimiert (Feld biCompression von Variable infoHeader gleich 0)?
+	if (infoHeader.biCompression != 0) {
+		printf("Error: Die Datei ist komprimiert.\n");
+		fclose(fp);
+		exit(1);
+	}
+	//Falls ein Fehler vorliegt / auftritt, wird das Programm sofort mit einer entsprechenden Fehlermeldung beendet.
+	
+	
 	//TODO
 	//Dateizeiger fp auf Offset (bfOffBits von der Variablen header) setzen 
-	fseek(fp, header.bfOffBits, SEEK_SET);
+	if (fseek(fp, header.bfOffBits, SEEK_SET) != 0) {
+		printf("Error: Dateizeiger konnte nicht auf Offset gesetzt werden.\n");
+		fclose(fp);
+		exit(1);
+	}
 
-
-
-	//H he und Breite aus dem Informationsblock in Bilddaten  bernehmen
+	//Höhe und Breite aus dem Informationsblock in Bilddaten  bernehmen
 	image.height = infoHeader.biHeight;
 	image.width = infoHeader.biWidth;
 
@@ -209,7 +237,7 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 	//Anzahl an Bytes pro Bildzeile, Abrundung beim Teilen mit 32 gewollt
 	int rowSize = (sizeof(sRGB) * 8 * image.width + 31) / 8;
 
-	//Zeigervektor f r zur Speicherung der einzelnen Bildzeilen anlegen 
+	//Zeigervektor für zur Speicherung der einzelnen Bildzeilen anlegen 
 	// (entspricht sozusagen der H he (height) des Bildes) 
 	image.rgb = (struct sRGB**)malloc(image.height * sizeof(void*));
 	//TODO
@@ -226,7 +254,7 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 	//Also muss die Schleife in der untersten Zeile beginnen
 	for (int i = (image.height - 1); i >= 0; i--) {
 		//Speicher f r jede Bildzeile anlegen und auslesen
-		image.rgb[i] = (sRGB*)malloc(rowSize);
+		image.rgb[i] = (sRGB*)calloc(rowSize, 1);
 		if (image.rgb[i] != 0)
 			fread(image.rgb[i], rowSize, 1, fp);
 		else {
@@ -279,7 +307,7 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 	FILE* fpw = fopen("Ergebnis.bmp", "wb");
 	if (!fpw) {
 		printf("Fehler beim Speichern der Datei");
-		return -1;
+		exit(1);
 	}
 
 	//Dateikopf und Informationsblock schreiben
@@ -295,7 +323,6 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 	//Die Pixel werden wieder von unten nach oben gespeichert
 	for (int i = image.height - 1; i >= 0; i--) {
 		fwrite(image.rgb[i], rowSize, 1, fpw);
-		free(image.rgb[i]);
 	}
 
 	//TODO
@@ -304,11 +331,12 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 
 	//TODO
 	//Speicher freigeben 
-	for (int i = 0; i < image.height - 1; i++)
+	for (int i = image.height - 1; i >= 0; i--) {
 		free(image.rgb[i]);
+	}
 	free(image.rgb);
 
-	return;
+	return 0;
 }
 
 
@@ -333,6 +361,7 @@ void filterGray(sImage image) {
 			image.rgb[i][j].blue = gray;
 		}
 	}
+	return;
 }
 
 
@@ -359,6 +388,7 @@ void filterSepia(sImage image) {
 		image.rgb[i][j].blue = (blue > 255) ? 255 : blue;
 		}
 	}
+	return;
 }
 
 //TODO
@@ -398,6 +428,7 @@ void effectBlurred(sImage image) {
 			image.rgb[i][j].blue = image.rgb[i][j + shift].blue;
 		}
 	}
+	return;
 }
 
 
