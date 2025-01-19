@@ -140,8 +140,8 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 	//Datei im Bin rmodul zum Lesen  ffnen
 	FILE* fp = fopen(fileName, "rb");
 	if (!fp) {
-		printf("Fehler beim  ffnen der Datei\n");
-		exit(-1);
+		printf("Fehler beim  oeffnen der Datei\n");
+		exit(1);
 	}
 
 
@@ -174,15 +174,13 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 	{
 		printf("Die Datei ist kein BMP-Format");
 		fclose(fp);
-		return -1;
+		exit(1);
 	}
-
-	printf("%d\n", (int)sizeof(sBFInfoHeader));
-	printf("%d\n", infoHeader.biSize);
-
 
 	if (infoHeader.biSize != 40 && infoHeader.biSize != 108 && infoHeader.biSize != 124) {
 		printf("Error: Groesse des Informationsblocks ist ungueltig. \n");
+		printf("%d\n", (int)sizeof(sBFInfoHeader));
+		printf("%d\n", infoHeader.biSize);
 		fclose(fp);
 		exit(1);
 	}
@@ -190,7 +188,7 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 	if (infoHeader.biBitCount != 24 || infoHeader.biCompression != 0) {
 		printf("Bitte nur Dateien im 24-Bit Format ohne Kompression");
 		fclose(fp);
-		return -1;
+		exit(1);
 	}
 
 
@@ -219,7 +217,7 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 	if (!image.rgb) {
 		printf("Fehler bei Speicherzuweisung");
 		fclose(fp);
-		return -1;
+		exit(1);
 	}
 
 
@@ -234,7 +232,7 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 		else {
 			printf("Error: Kein Speicher vorhanden.\n");
 			fclose(fp);
-			exit(-1);
+			exit(1);
 		}
 	}
 
@@ -306,9 +304,11 @@ int bmpProcessing(int filter, int effect, char fileName[]) {
 
 	//TODO
 	//Speicher freigeben 
+	for (int i = 0; i < image.height - 1; i++)
+		free(image.rgb[i]);
+	free(image.rgb);
 
-
-	return 0;
+	return;
 }
 
 
